@@ -9,6 +9,8 @@ from datetime import datetime
 
 from pathlib import Path
 
+HEADER_FORMAT = "index	condition1	condition2	layout	emotion	procedure	x	y	gender\n"
+
 
 class Cond1_FB(IntEnum):
     """
@@ -59,6 +61,9 @@ class Point:
         self.x = x
         self.y = y
 
+    def __repr__(self):
+        return f"({self.x},{self.y})"
+
     @property
     def p(self):
         return (self.x, self.y)
@@ -79,6 +84,7 @@ class SingleAnswer:
 
     def __init__(
         self,
+        index: int,
         cond1: Cond1_FB,
         cond2: Cond2_Ref,
         layout: Layout,
@@ -87,6 +93,7 @@ class SingleAnswer:
         p: Point,
         gender: Gender,
     ):
+        self.index = index
         self.cond1: Cond1_FB = cond1
         self.cond2: Cond2_Ref = cond2
         self.layout: Layout = layout
@@ -100,16 +107,22 @@ class SingleAnswer:
         """
         tsv の一行を読み込む
         """
-        data = list(map(int, s.split("\t")))
+        # map(int, ...) にすると手間は減るのだが，
+        # Point が float の形で書かれてたりするので…
+        data = s.split("\t")
         return SingleAnswer(
-            Cond1_FB(data[0]),
-            Cond2_Ref(data[1]),
-            bool(data[2]),
-            Emotion(data[3]),
-            Procedure(data[4]),
-            Point(data[5], data[6]),
-            data[7],
+            int(data[0]),
+            Cond1_FB(int(data[1])),
+            Cond2_Ref(int(data[2])),
+            bool(int(data[3])),
+            Emotion(int(data[4])),
+            Procedure(int(data[5])),
+            Point(int(float(data[6])), int(float(data[7]))),
+            int(float(data[8])),
         )
+
+    def __repr__(self):
+        return f"{self.index} - {self.loc}"
 
 
 class GResult:
@@ -120,7 +133,10 @@ class GResult:
     def __init__(self, name: ID, dat: list[SingleAnswer], t: datetime | None = None):
         self.name: ID = name  # 被験者ID
         self.dat: list[SingleAnswer] = dat  # 結果のリスト
-        self.t: datetime = t  # 実施の日・時刻
+        self.t: datetime | None = t  # 実施の日・時刻
+
+    def __repr__(self):
+        return f"{self.name} at {self.t} \n{self.dat}"
 
     @staticmethod
     def from_file(p: Path) -> GResult:
@@ -130,19 +146,21 @@ class GResult:
         assert p.is_file() and p.suffix == ".tsv"
         (the_id, the_date) = fname_parser(p)
         with p.open("r") as f:
+            header = f.readline()
+            assert header == HEADER_FORMAT
             results = map(SingleAnswer.from_line, f.read().splitlines())
         return GResult(the_id, list(results), the_date)
 
 
-def fname_parser(p: Path) -> tuple[ID, date] | None:
+def fname_parser(p: Path) -> tuple[ID, datetime]:
     """
     ID と日付はファイル名に含まれているので，それを取り出す．
     mm-dd-hh-mm-ss-ID.tsv
     """
     parts = p.stem.split("-")
     if len(parts) < 6:
-        # パーツが足りないので多分違います．ValueError でもいいのかも．
-        return None
+        # パーツが足りないので多分違います．
+        raise ValueError(f"The filename doens't conform: {p.name}")
     # FIXME:
     # 現状年が含まれてない．11月-12月は2024年，それ以外は2025年としている．
     # フォーマットの変更依頼したいですね．冒頭に入れてもらえたら↓の5を6にしたらよさそう
@@ -151,4 +169,4 @@ def fname_parser(p: Path) -> tuple[ID, date] | None:
     else:
         year = 2025
     rest_of_date = list(map(int, parts[:5]))
-    return ("-".join(parts[5:]), date(year, *rest_of_date))
+    return ("-".join(parts[5:]), datetime(year, *rest_of_date))
