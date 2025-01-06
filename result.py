@@ -65,7 +65,7 @@ class Point:
         return f"({self.x},{self.y})"
 
     @property
-    def p(self):
+    def p(self) -> tuple[int,int]:
         return (self.x, self.y)
 
 
