@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from datetime import date
+from datetime import datetime
+
+from pathlib import Path
 
 
 class Cond1_FB(IntEnum):
@@ -30,6 +32,7 @@ class Cond2_Ref(IntEnum):
 type Index = int
 type Layout = bool
 type Gender = int
+type ID = str
 
 
 class Emotion(IntEnum):
@@ -65,11 +68,15 @@ class Procedure(IntEnum):
     Test = 0
     Main = 1
 
+    def is_test(self) -> bool:
+        return self == Procedure.Test
+
 
 class SingleAnswer:
     """
     結果のtsv の一行にあたるやつ
     """
+
     def __init__(
         self,
         cond1: Cond1_FB,
@@ -88,13 +95,60 @@ class SingleAnswer:
         self.loc: Point = p
         self.gender: Gender = gender
 
+    @staticmethod
+    def from_line(s: str) -> SingleAnswer:
+        """
+        tsv の一行を読み込む
+        """
+        data = list(map(int, s.split("\t")))
+        return SingleAnswer(
+            Cond1_FB(data[0]),
+            Cond2_Ref(data[1]),
+            bool(data[2]),
+            Emotion(data[3]),
+            Procedure(data[4]),
+            Point(data[5], data[6]),
+            data[7],
+        )
+
 
 class GResult:
     """
     被験者ID, optional に日付，後は結果のリスト．
     """
 
-    def __init__(self, name: str, dat: list[SingleAnswer], date: date | None = None):
-        self.name = name
-        self.dat = dat
-        self.date = date
+    def __init__(self, name: ID, dat: list[SingleAnswer], t: datetime | None = None):
+        self.name: ID = name  # 被験者ID
+        self.dat: list[SingleAnswer] = dat  # 結果のリスト
+        self.t: datetime = t  # 実施の日・時刻
+
+    @staticmethod
+    def from_file(p: Path) -> GResult:
+        """
+        所定の形式の tsv を読み込む．
+        """
+        assert p.is_file() and p.suffix == ".tsv"
+        (the_id, the_date) = fname_parser(p)
+        with p.open("r") as f:
+            results = map(SingleAnswer.from_line, f.read().splitlines())
+        return GResult(the_id, list(results), the_date)
+
+
+def fname_parser(p: Path) -> tuple[ID, date] | None:
+    """
+    ID と日付はファイル名に含まれているので，それを取り出す．
+    mm-dd-hh-mm-ss-ID.tsv
+    """
+    parts = p.stem.split("-")
+    if len(parts) < 6:
+        # パーツが足りないので多分違います．ValueError でもいいのかも．
+        return None
+    # FIXME:
+    # 現状年が含まれてない．11月-12月は2024年，それ以外は2025年としている．
+    # フォーマットの変更依頼したいですね．冒頭に入れてもらえたら↓の5を6にしたらよさそう
+    if parts[0] in ("11", "12"):
+        year = 2024
+    else:
+        year = 2025
+    rest_of_date = list(map(int, parts[:5]))
+    return ("-".join(parts[5:]), date(year, *rest_of_date))
