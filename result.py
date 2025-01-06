@@ -4,15 +4,18 @@
 
 from __future__ import annotations
 
-from enum import IntEnum
+from enum import IntEnum, Enum
 from datetime import datetime
+
+import pandas as pd
+from pandas import DataFrame
 
 from pathlib import Path
 
 HEADER_FORMAT = "index	condition1	condition2	layout	emotion	procedure	x	y	gender\n"
 
 
-class Cond1_FB(IntEnum):
+class Cond1_FB(Enum):
     """
     condition1: 自分の顔表示（0 = 映像なし・1 = 自分顔(自分の顔に自分の顔をスワップする)・2 = 他人顔）
     """
@@ -22,7 +25,7 @@ class Cond1_FB(IntEnum):
     Other = 2
 
 
-class Cond2_Ref(IntEnum):
+class Cond2_Ref(Enum):
     """
     condition2: 参考顔表示（0 = 自分顔・1 = 他人顔(他人顔でも他人の顔をそのままスワップする)
     """
@@ -37,7 +40,7 @@ type Gender = int
 type ID = str
 
 
-class Emotion(IntEnum):
+class Emotion(Enum):
     Ang = 0
     Exc = 1
     Hap = 2
@@ -76,80 +79,44 @@ class Procedure(IntEnum):
     def is_test(self) -> bool:
         return self == Procedure.Test
 
-
-class SingleAnswer:
+class GResultDF:
     """
-    結果のtsv の一行にあたるやつ
-    """
-
-    def __init__(
-        self,
-        index: int,
-        cond1: Cond1_FB,
-        cond2: Cond2_Ref,
-        layout: Layout,
-        emo: Emotion,
-        proc: Procedure,
-        p: Point,
-        gender: Gender,
-    ):
-        self.index = index
-        self.cond1: Cond1_FB = cond1
-        self.cond2: Cond2_Ref = cond2
-        self.layout: Layout = layout
-        self.emotion: Emotion = emo
-        self.proc: Procedure = proc
-        self.loc: Point = p
-        self.gender: Gender = gender
-
-    @staticmethod
-    def from_line(s: str) -> SingleAnswer:
-        """
-        tsv の一行を読み込む
-        """
-        # map(int, ...) にすると手間は減るのだが，
-        # Point が float の形で書かれてたりするので…
-        data = s.split("\t")
-        return SingleAnswer(
-            int(data[0]),
-            Cond1_FB(int(data[1])),
-            Cond2_Ref(int(data[2])),
-            bool(int(data[3])),
-            Emotion(int(data[4])),
-            Procedure(int(data[5])),
-            Point(int(float(data[6])), int(float(data[7]))),
-            int(float(data[8])),
-        )
-
-    def __repr__(self):
-        return f"{self.index} - {self.loc}"
-
-
-class GResult:
-    """
-    被験者ID, optional に日付，後は結果のリスト．
+    被験者ID, optional に日付，後は結果を pd.DataFrame の形でもつ
     """
 
-    def __init__(self, name: ID, dat: list[SingleAnswer], t: datetime | None = None):
+    def __init__(self, name: ID, df: pd.DataFrame , t: datetime | None = None) -> GResultDF:
         self.name: ID = name  # 被験者ID
-        self.dat: list[SingleAnswer] = dat  # 結果のリスト
+        self.df:  pd.DataFrame = df  # 結果
         self.t: datetime | None = t  # 実施の日・時刻
 
-    def __repr__(self):
-        return f"{self.name} at {self.t} \n{self.dat}"
+
+    def __repr__(self) -> str:
+        return f"{self.name} at {self.t} \n{self.df}"
 
     @staticmethod
-    def from_file(p: Path) -> GResult:
+    def from_file(p: Path) -> GResultDF:
         """
         所定の形式の tsv を読み込む．
         """
         assert p.is_file() and p.suffix == ".tsv"
         (the_id, the_date) = fname_parser(p)
-        with p.open("r") as f:
-            header = f.readline()
-            assert header == HEADER_FORMAT
-            results = map(SingleAnswer.from_line, f.read().splitlines())
-        return GResult(the_id, list(results), the_date)
+        dat = pd.read_csv(p, sep='\t')
+        return GResultDF.from_raw_dataframe(the_id, dat, the_date)
+
+    @staticmethod
+    def from_raw_dataframe(name:ID, df:DataFrame, t:datetime | None = None) -> GResultDF:
+        """
+        もとのデータに前処理をちょっと挟むのだ．
+        """
+        df["p"] = df.apply(lambda r: Point(int(r.x), int(r.y)), axis=1)
+        df["condition1"] = df['condition1'].map(Cond1_FB)
+        df["condition2"] = df['condition2'].map(Cond2_Ref)
+        df["emotion"]  = df['emotion'].map(Emotion)
+        df["gender"]  = df['gender'].map(int)
+        df["procedure"]  = df['procedure'].map(int)
+        df["layout"]  = df['layout'].map(lambda n: int(n) != 0)
+        return GResultDF(name, df, t)
+
 
 
 def fname_parser(p: Path) -> tuple[ID, datetime]:
