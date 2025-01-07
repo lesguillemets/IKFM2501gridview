@@ -115,6 +115,8 @@ class GResultDF:
         df["gender"]  = df['gender'].map(int)
         df["procedure"]  = df['procedure'].map(int)
         df["layout"]  = df['layout'].map(lambda n: int(n) != 0)
+        df["id"] = name
+        df["time"] = t
         return GResultDF(name, df, t)
 
 
