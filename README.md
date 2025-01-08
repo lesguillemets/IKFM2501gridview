@@ -8,11 +8,12 @@
 
 ## Usage
 
-- `python main.py plot_by_emotion`: Emotion ごとにプロットして（ブラウザが開く），閲覧
+- `*.tsv` を`data/` に置いておく
+- `$ python main.py plot_by_emotion`: Emotion ごとにプロットして（ブラウザが開く），閲覧
 	* wsl で動かす場合は，wsl から開けるブラウザがあることが必要 (`apt install firefox` が簡単ではある)．
-- `python main.py print`: 読み取ったデータをそのまま標準出力に流す（もっぱら動作確認用）
+- `$ python main.py print`: 読み取ったデータをそのまま標準出力に流す（もっぱら動作確認用）
 
 ## Options
 - `--dir`: データを読み取るディレクトリを指定（デフォルトでは `data/`）
-- `--filter-ref` など一部，条件でフィルタをかけられる．例えば `python main.py --filter-ref Self plot_by_emotion`
+- `--filter-ref` など一部，条件でフィルタをかけられる．例えば `$ python main.py --filter-ref Self plot_by_emotion`
 - `--filter-emo` は存在するが，現状表情ごとのプロットしかしないので無意味
