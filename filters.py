@@ -43,3 +43,6 @@ def ref_is_other(df: DataFrame) -> bool:
 
 def emo_is(e: Emotion) -> DataFilter:
     return (lambda df: df['emotion'] == e)
+
+def id_is(the_id:str) -> DataFilter:
+    return (lambda df: df['id'] == the_id)
