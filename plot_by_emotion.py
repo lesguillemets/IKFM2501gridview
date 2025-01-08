@@ -12,7 +12,12 @@ import plotly.express as px
 
 def prepare_counter() -> np.ndarray:
     # 誰が何回か，を覚えておく
-    return np.full((GRID_SIZE,GRID_SIZE), defaultdict(int))
+    ar = np.empty((GRID_SIZE, GRID_SIZE), dtype=object)
+    for x in range(GRID_SIZE):
+        for y in range(GRID_SIZE):
+            ar[x,y] = defaultdict(int)
+    return ar
+
 
 def count_trials(df:DataFrame) -> dict[Emotion,DataFrame]:
     """
@@ -22,20 +27,25 @@ def count_trials(df:DataFrame) -> dict[Emotion,DataFrame]:
     for (_, trial) in df.iterrows():
         emo: Emotion = trial['emotion']
         # この表情で，(x,y) における投票をだれが何回やったか
-        counters[emo][int(trial['x'])+GRID_SIZE//2,int(trial['y'])+GRID_SIZE//2][trial['id']] += 1
+        x = int(trial['x'])+GRID_SIZE//2
+        y = int(trial['y'])+GRID_SIZE//2
+        print(trial, emo, trial['x'], trial['y'])
+        counters[emo][x,y][trial['id']] += 1
     result = {}
     for (emo, counter) in counters.items():
         result[emo] = pd.DataFrame(
             [
                 (x-GRID_SIZE//2,y-GRID_SIZE//2, counter[x,y])
                 for x in range(11) for y in range(11)
-            ]
+            ],
+            columns=['x','y', 'count']
         )
     return result
 
 def do_plot(df:DataFrame) -> None:
     counted = count_trials(df)
-    print(counted)
+    hap = counted[Emotion.Hap]
+    print(hap[hap['x']==3])
 
 def do_simple_plot(df: DataFrame):
     fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
