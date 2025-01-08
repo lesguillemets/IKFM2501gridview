@@ -46,3 +46,9 @@ def emo_is(e: Emotion) -> DataFilter:
 
 def id_is(the_id:str) -> DataFilter:
     return (lambda df: df['id'] == the_id)
+
+def group_is_h(df: DataFrame) -> bool:
+    return df['id'].str.contains("CH")
+
+def group_is_a(df: DataFrame) -> bool:
+    return df['id'].str.contains("CA")
