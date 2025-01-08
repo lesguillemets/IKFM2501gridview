@@ -49,6 +49,7 @@ def do_plot(df:DataFrame) -> None:
     for c in counted_by_emotions.values():
         c['total_count'] = c['counts_by_id'].apply(lambda d: sum(d.values()))
 
+    zmax = max( (c['total_count'].max() for c in counted_by_emotions.values()) )
     fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
     for i in range(5):
         col = 1+i % 3
@@ -60,6 +61,8 @@ def do_plot(df:DataFrame) -> None:
                 x  = this_count['x'],
                 y  = this_count['y'],
                 z  = this_count['total_count'],
+                zmin = 0,
+                zmax = zmax,
                 customdata=customdata,
                 hovertemplate=(
                                'X: %{x},' +
