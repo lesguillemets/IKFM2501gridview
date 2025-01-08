@@ -1,5 +1,6 @@
 from result import GResultDF, Emotion, Cond2_Ref
 import pandas as pd
+import numpy as np
 from pandas import DataFrame
 
 
@@ -7,7 +8,15 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px
 
-def do_plot(df: DataFrame):
+def prepare_counter() -> np.ndarray:
+    # 誰が何回か，を覚えておく
+    return np.full((11,11), dict())
+
+def do_plot(df:DataFrame):
+    counters = { Emotion(i): prepare_counter() for i in range(5) }
+    pass
+
+def do_simple_plot(df: DataFrame):
     fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
     # df = pd.concat(map(lambda d: d.df, data))
     # (ID とかは column あるからどっちでもいいやろの気持ち)
