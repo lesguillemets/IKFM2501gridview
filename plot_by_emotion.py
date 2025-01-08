@@ -29,7 +29,6 @@ def count_trials(df:DataFrame) -> dict[Emotion,DataFrame]:
         # この表情で，(x,y) における投票をだれが何回やったか
         x = int(trial['x'])+GRID_SIZE//2
         y = int(trial['y'])+GRID_SIZE//2
-        print(trial, emo, trial['x'], trial['y'])
         counters[emo][x,y][trial['id']] += 1
     result = {}
     for (emo, counter) in counters.items():
@@ -38,14 +37,39 @@ def count_trials(df:DataFrame) -> dict[Emotion,DataFrame]:
                 (x-GRID_SIZE//2,y-GRID_SIZE//2, counter[x,y])
                 for x in range(11) for y in range(11)
             ],
-            columns=['x','y', 'count']
+            columns=['x','y', 'counts_by_id']
         )
     return result
 
+def counts_by_id_to_str(d):
+    return ', '.join( (f"{p}: {c}" for (p,c) in d.items()) )
+
 def do_plot(df:DataFrame) -> None:
-    counted = count_trials(df)
-    hap = counted[Emotion.Hap]
-    print(hap[hap['x']==3])
+    counted_by_emotions = count_trials(df)
+    for c in counted_by_emotions.values():
+        c['total_count'] = c['counts_by_id'].apply(lambda d: sum(d.values()))
+
+    fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
+    for i in range(5):
+        col = 1+i % 3
+        row = 1+i // 3
+        emo: Emotion = Emotion(i)
+        this_count = counted_by_emotions[emo]
+        customdata = this_count['counts_by_id'].apply(counts_by_id_to_str)
+        heatmap = go.Heatmap(
+                x  = this_count['x'],
+                y  = this_count['y'],
+                z  = this_count['total_count'],
+                customdata=customdata,
+                hovertemplate=(
+                               'X: %{x},' +
+                               'Y: %{y}<br>' +
+                               'Count: %{z}<br>' +
+                               'Names: %{customdata}'
+                               ),
+                )
+        fig.append_trace( heatmap, row=row, col=col,)
+    fig.show()
 
 def do_simple_plot(df: DataFrame):
     fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
