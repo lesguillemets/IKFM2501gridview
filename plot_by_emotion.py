@@ -7,9 +7,10 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px
 
-def do_plot(data: list[DataFrame]):
+def do_plot(df: DataFrame):
     fig = make_subplots(rows=2, cols=3, subplot_titles= [Emotion(i).name for i in range(5) ])
-    df = pd.concat(map(lambda d: d.df, data))
+    # df = pd.concat(map(lambda d: d.df, data))
+    # (ID とかは column あるからどっちでもいいやろの気持ち)
     for i in range(5):
         col = 1+i % 3
         row = 1+i // 3

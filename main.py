@@ -1,4 +1,8 @@
+import pandas as pd
+from pandas import DataFrame
 from pathlib import Path
+
+from plotly import plot
 from result import GResultDF, Emotion
 import filters as fls
 
@@ -6,6 +10,7 @@ import plot_by_emotion
 import argparse
 
 AP = argparse.ArgumentParser(description="loads")
+AP.add_argument('command', choices=["print", "plot_by_emotion"])
 AP.add_argument('--dir', type=Path, help="Path to load data from")
 AP.add_argument('--filter-ref', choices=["Self", "Other", "All"], help="filter by Ref=?")
 AP.add_argument('--filter-emo',
@@ -13,18 +18,24 @@ AP.add_argument('--filter-emo',
                 help="Filter by which emotion?"
                 )
 
+def print_df(df: DataFrame):
+    with pd.option_context('display.max_rows', None):
+        print(df)
+
+COMMANDS = {
+    'print': print_df,
+    'plot_by_emotion': plot_by_emotion.do_plot,
+}
 
 def main():
     args = AP.parse_args()
     data_dir = args.dir or Path("./data")
     data_all = [GResultDF.from_file(f) for f in data_dir.glob("*.tsv")]
+    df = pd.concat(map(lambda d: d.df, data_all))
     funnel = fls.Funnel.new()
     funnel = handle_filter_ref(funnel, args.filter_ref)
     funnel = handle_filter_emo(funnel, args.filter_emo)
-
-    print(funnel.pour(data_all[0].df))
-    print(data_all[0].df)
-    # plot_by_emotion.do_plot(data_all)
+    COMMANDS[args.command](funnel.pour(df))
 
 
 def handle_filter_ref(f: fls.Funnel, arg: str | None) -> fls.Funnel:
