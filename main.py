@@ -11,8 +11,17 @@ import filters as fls
 import plot_by_emotion
 import argparse
 
+
+def print_df(df: DataFrame):
+    with pd.option_context('display.max_rows', None):
+        print(df)
+COMMANDS = {
+    'print': print_df,
+    'plot_by_emotion': plot_by_emotion.do_plot,
+}
+
 AP = argparse.ArgumentParser(description="loads")
-AP.add_argument('command', choices=["print", "plot_by_emotion"])
+AP.add_argument('command', choices=COMMANDS.keys())
 AP.add_argument('--dir', type=Path, help="Path to load data from")
 AP.add_argument('--filter-ref', choices=["Self", "Other", "All"], help="filter by Ref=?")
 AP.add_argument('--filter-group', choices=["H", "A"], help="filter by group=?")
@@ -21,14 +30,6 @@ AP.add_argument('--filter-emo',
                 help="Filter by which emotion?"
                 )
 
-def print_df(df: DataFrame):
-    with pd.option_context('display.max_rows', None):
-        print(df)
-
-COMMANDS = {
-    'print': print_df,
-    'plot_by_emotion': plot_by_emotion.do_plot,
-}
 
 def main():
     args = AP.parse_args()
