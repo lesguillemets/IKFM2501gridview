@@ -41,14 +41,14 @@ type ID = str
 
 
 class Emotion(Enum):
-    Ang = 0
-    Exc = 1
+    Sad = 0
+    Ang = 1
     Hap = 2
-    Rel = 3
-    Sad = 4
-    TestA = 5
-    TestB = 6
-    TestC = 7
+    Exc = 3
+    Rel = 4
+    TestDis = 5
+    TestFear = 6
+    TestSur = 7
     TestD = 8
 
     def is_test(self) -> bool:
